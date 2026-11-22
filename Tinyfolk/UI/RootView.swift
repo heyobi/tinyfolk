@@ -40,7 +40,7 @@ struct RootView: View {
     @AppStorage("debugUnlocked") private var debugUnlocked = false
     @State private var showDebug = false
 
-    var body: some View {
+    private var stage: some View {
         GeometryReader { proxy in
             let fold = foldFrame(proxy)
             ZStack {
@@ -54,22 +54,38 @@ struct RootView: View {
         .modifier(OuterDisplay(engine: engine))
         .statusBarHidden(true)
         .persistentSystemOverlays(.hidden)
-        .sheet(item: $sheet) { s in
-            Group {
-                switch s {
-                case .picker(let tab): PickerSheet(tab: tab, sheet: $sheet)
-                case .settings: SettingsSheet(sheet: $sheet, showDebug: $showDebug)
-                case .paywall: PaywallSheet(sheet: $sheet)
-                }
-            }
-            .environmentObject(engine)
-            .environmentObject(store)
-            .presentationDetents(s == .paywall || s == .settings ? [.large] : [.medium, .large])
-            .presentationBackground(.regularMaterial)
-        }
+    }
+
+    private var withSheets: some View {
+        stage
+        .sheet(item: $sheet) { s in sheetView(s) }
         .sheet(isPresented: Binding(get: { recorder.preview != nil }, set: { if !$0 { recorder.preview = nil } })) {
             if let p = recorder.preview { PreviewController(controller: p) { recorder.preview = nil }.ignoresSafeArea() }
         }
+    }
+
+    @ViewBuilder
+    private func sheetContent(_ s: Sheet) -> some View {
+        switch s {
+        case .picker(let tab): PickerSheet(tab: tab, sheet: $sheet)
+        case .settings: SettingsSheet(sheet: $sheet, showDebug: $showDebug)
+        case .paywall: PaywallSheet(sheet: $sheet)
+        }
+    }
+
+    private func sheetView(_ s: Sheet) -> some View {
+        let large: Set<PresentationDetent> = [.large]
+        let both: Set<PresentationDetent> = [.medium, .large]
+        let full = s == .paywall || s == .settings
+        return sheetContent(s)
+            .environmentObject(engine)
+            .environmentObject(store)
+            .presentationDetents(full ? large : both)
+            .presentationBackground(.regularMaterial)
+    }
+
+    var body: some View {
+        withSheets
         .onChange(of: engine.askReview) { _, ask in
             if ask { requestReview(); engine.askReview = false }
         }
