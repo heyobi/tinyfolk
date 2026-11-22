@@ -1,0 +1,40 @@
+name: App Store screenshots
+
+on:
+  workflow_dispatch:
+    inputs:
+      only:
+        description: 'Run one device only (iphone, ipad, duo-outer, duo-inner); empty for all'
+        default: ''
+
+jobs:
+  shots:
+    runs-on: xcode-27
+    timeout-minutes: 45
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { id: iphone, device: 'iPhone 17 Pro', display: '', mode: '' }
+          - { id: ipad, device: 'iPad Pro 13-inch (M5)', display: '', mode: '' }
+          - { id: duo-outer, device: 'iPhone Duo', display: '1', mode: 'outer' }
+          - { id: duo-inner, device: 'iPhone Duo', display: '3', mode: 'inner' }
+    name: ${{ matrix.id }}
+    steps:
+      - if: inputs.only == '' || inputs.only == matrix.id
+        uses: actions/checkout@v7
+      - if: inputs.only == '' || inputs.only == matrix.id
+        name: Build for the simulator
+        run: |
+          brew install xcodegen && xcodegen generate
+          set -o pipefail
+          xcodebuild build -project Tinyfolk.xcodeproj -scheme Tinyfolk -configuration Debug -sdk iphonesimulator \
+            -destination 'generic/platform=iOS Simulator' -derivedDataPath build/sim CODE_SIGNING_ALLOWED=NO | tail -n 30
+      - if: inputs.only == '' || inputs.only == matrix.id
+        name: Take the screenshots
+        run: bash scripts/sim-shots.sh "${{ matrix.device }}" "shots/${{ matrix.id }}" "${{ matrix.display }}" "${{ matrix.mode }}"
+      - if: always() && (inputs.only == '' || inputs.only == matrix.id)
+        uses: actions/upload-artifact@v4
+        with:
+          name: screenshots-${{ matrix.id }}
+          path: shots/

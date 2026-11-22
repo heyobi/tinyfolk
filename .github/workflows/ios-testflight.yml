@@ -1,0 +1,182 @@
+name: iOS → TestFlight
+
+on:
+  push:
+    branches: [main]
+    paths-ignore: ['**.md', 'store/**', 'docs/**', 'tools/**', 'assets/**', 'scripts/sim-*.sh', 'scripts/compose-screens.py', 'scripts/fold-cover.py', 'scripts/listing.py', 'scripts/landing.py', 'scripts/icon.py', 'scripts/i18n/**', '.github/workflows/screenshots.yml', '.gitignore']
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.event_name == 'pull_request' && format('pr-{0}', github.ref) || 'ios-testflight' }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+env:
+  TEAM_ID: U99V9TSK2X
+  BUNDLE_ID: com.heyobi.tinyfolk
+  PROFILE_NAME: Tinyfolk CI AppStore
+
+jobs:
+  test:
+    # Projection, viewer and music logic is unit-tested on a simulator before anything is built for TestFlight.
+    name: Unit tests (simulator)
+    runs-on: xcode-27
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v7
+      - name: Generate Xcode project
+        run: brew install xcodegen && xcodegen generate
+      - name: Run unit tests
+        run: |
+          set -o pipefail
+          UDID=$(bash scripts/sim-device.sh "iPhone 17 Pro")
+          echo "Simulator: $UDID"
+          xcodebuild test -project Tinyfolk.xcodeproj -scheme Tinyfolk -destination "id=$UDID" \
+            -only-testing:TinyfolkTests CODE_SIGNING_ALLOWED=NO > test.log 2>&1 || { grep -E "error:|failed|XCTAssert" test.log | head -n 60; tail -n 30 test.log; exit 1; }
+          grep -E "Executed|passed|failed" test.log | tail -n 30
+      - name: SDK notes (outer display accessory API)
+        if: always()
+        continue-on-error: true
+        run: |
+          SDK=$(xcrun --sdk iphoneos --show-sdk-path)
+          find "$SDK/System/Library/Frameworks/SwiftUI.framework" "$SDK/System/Library/Frameworks/AVKit.framework" "$SDK/System/Library/Frameworks/AVFoundation.framework"             -name "*arm64e-apple-ios.swiftinterface" 2>/dev/null | while read -r f; do
+            echo "== $f"; grep -n -B2 -A6 "CameraCaptureAccessory\|func sceneAccessory\|onAvailabilityChange" "$f" | head -n 120
+          done
+
+  prepare:
+    name: Check App Store Connect
+    needs: test
+    if: github.event_name != 'pull_request'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    outputs:
+      build_number: ${{ steps.build.outputs.build_number }}
+    env:
+      ASC_KEY_ID: ${{ secrets.APP_STORE_CONNECT_KEY_ID }}
+      ASC_ISSUER_ID: ${{ secrets.APP_STORE_CONNECT_ISSUER_ID }}
+      ASC_PRIVATE_KEY: ${{ secrets.APP_STORE_CONNECT_PRIVATE_KEY }}
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with: { node-version: 22 }
+      - name: Check required secrets
+        env:
+          C: ${{ secrets.BUILD_CERTIFICATE_BASE64 }}
+          P: ${{ secrets.P12_PASSWORD }}
+          K: ${{ secrets.KEYCHAIN_PASSWORD }}
+        run: |
+          missing=""
+          for v in ASC_KEY_ID ASC_ISSUER_ID ASC_PRIVATE_KEY C P K; do [ -n "${!v}" ] || missing="$missing $v"; done
+          if [ -n "$missing" ]; then echo "::error::Missing repository secrets:$missing (see README)"; exit 1; fi
+      - name: Ensure bundle ID and app record
+        id: app
+        run: node scripts/asc.cjs ensure-app
+      - name: Next build number
+        id: build
+        run: node scripts/asc.cjs next-build-number "${{ steps.app.outputs.app_id }}" "${{ github.run_number }}"
+
+  build:
+    name: Build & upload to TestFlight
+    needs: prepare
+    runs-on: xcode-27
+    timeout-minutes: 45
+    env:
+      ASC_KEY_ID: ${{ secrets.APP_STORE_CONNECT_KEY_ID }}
+      ASC_ISSUER_ID: ${{ secrets.APP_STORE_CONNECT_ISSUER_ID }}
+      ASC_PRIVATE_KEY: ${{ secrets.APP_STORE_CONNECT_PRIVATE_KEY }}
+      BUILD_NUMBER: ${{ needs.prepare.outputs.build_number }}
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with: { node-version: 22 }
+      - name: Generate Xcode project
+        run: brew install xcodegen && xcodegen generate
+
+      - name: Install Apple Distribution certificate
+        id: cert
+        env:
+          BUILD_CERTIFICATE_BASE64: ${{ secrets.BUILD_CERTIFICATE_BASE64 }}
+          P12_PASSWORD: ${{ secrets.P12_PASSWORD }}
+          KEYCHAIN_PASSWORD: ${{ secrets.KEYCHAIN_PASSWORD }}
+        run: |
+          CERT_PATH="$RUNNER_TEMP/build_certificate.p12"
+          KEYCHAIN_PATH="$RUNNER_TEMP/app-signing.keychain-db"
+          node -e "
+            let raw = (process.env.BUILD_CERTIFICATE_BASE64 || '').trim();
+            raw = raw.replace(/^BUILD_CERTIFICATE_BASE64\s*=\s*/i, '').replace(/^[\"']|[\"']$/g, '').replace(/\s+/g, '');
+            require('fs').writeFileSync(process.argv[1], Buffer.from(raw, 'base64'));
+          " "$CERT_PATH"
+          security create-keychain -p "$KEYCHAIN_PASSWORD" "$KEYCHAIN_PATH"
+          security set-keychain-settings -lut 21600 "$KEYCHAIN_PATH"
+          security unlock-keychain -p "$KEYCHAIN_PASSWORD" "$KEYCHAIN_PATH"
+          CLEAN_PASS=$(printf '%s' "$P12_PASSWORD" | tr -d '\r\n')
+          security import "$CERT_PATH" -k "$KEYCHAIN_PATH" -P "$CLEAN_PASS" -f pkcs12 -T /usr/bin/codesign -T /usr/bin/security
+          security set-key-partition-list -S apple-tool:,apple:,codesign: -s -k "$KEYCHAIN_PASSWORD" "$KEYCHAIN_PATH" > /dev/null
+          security list-keychains -d user -s "$KEYCHAIN_PATH" $(security list-keychains -d user | tr -d '"')
+          security default-keychain -s "$KEYCHAIN_PATH"
+          rm -f "$CERT_PATH"
+          SERIAL=$(security find-certificate -a -c "Apple Distribution" -p "$KEYCHAIN_PATH" | openssl x509 -noout -serial | cut -d= -f2)
+          echo "serial=$SERIAL" >> "$GITHUB_OUTPUT"
+
+      - name: Create / fetch provisioning profile
+        id: profile
+        run: node scripts/asc.cjs profile "${{ steps.cert.outputs.serial }}" "$PROFILE_NAME"
+
+      - name: Archive
+        env:
+          PROFILE: ${{ steps.profile.outputs.profile_name }}
+        run: |
+          set -o pipefail
+          xcodebuild archive \
+            -project Tinyfolk.xcodeproj \
+            -scheme Tinyfolk \
+            -configuration Release \
+            -destination 'generic/platform=iOS' \
+            -archivePath build/Tinyfolk.xcarchive \
+            CODE_SIGN_STYLE=Manual \
+            DEVELOPMENT_TEAM="$TEAM_ID" \
+            CODE_SIGN_IDENTITY="Apple Distribution" \
+            PROVISIONING_PROFILE_SPECIFIER="$PROFILE" \
+            CURRENT_PROJECT_VERSION="$BUILD_NUMBER" | tail -n 120
+
+      - name: Export signed IPA
+        env:
+          PROFILE: ${{ steps.profile.outputs.profile_name }}
+        run: |
+          set -o pipefail
+          cat > build/ExportOptions.plist <<EOF
+          <?xml version="1.0" encoding="UTF-8"?>
+          <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+          <plist version="1.0">
+          <dict>
+            <key>method</key><string>app-store-connect</string>
+            <key>teamID</key><string>${TEAM_ID}</string>
+            <key>signingStyle</key><string>manual</string>
+            <key>provisioningProfiles</key>
+            <dict><key>${BUNDLE_ID}</key><string>${PROFILE}</string></dict>
+            <key>uploadSymbols</key><true/>
+          </dict>
+          </plist>
+          EOF
+          xcodebuild -exportArchive -archivePath build/Tinyfolk.xcarchive -exportOptionsPlist build/ExportOptions.plist -exportPath build/ipa | tail -n 60
+          ls -lh build/ipa/
+
+      - name: Upload to App Store Connect (TestFlight)
+        run: |
+          node -e "
+            const fs = require('fs'), path = require('path'), os = require('os');
+            let raw = (process.env.ASC_PRIVATE_KEY || '').trim().replace(/^[\"']|[\"']$/g, '');
+            raw = raw.replace(/\\\\n/g, '\n').trim() + '\n';
+            const d = path.join(os.homedir(), '.appstoreconnect', 'private_keys');
+            fs.mkdirSync(d, { recursive: true });
+            fs.writeFileSync(path.join(d, 'AuthKey_' + process.env.ASC_KEY_ID + '.p8'), raw);
+          "
+          IPA_PATH=$(find build/ipa -name "*.ipa" | head -n 1)
+          xcrun altool --upload-app -f "$IPA_PATH" -t ios --apiKey "$ASC_KEY_ID" --apiIssuer "$ASC_ISSUER_ID" --show-progress
+          echo "### Build $BUILD_NUMBER uploaded to App Store Connect" >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Clean up keychain and key
+        if: always()
+        run: |
+          security delete-keychain "$RUNNER_TEMP/app-signing.keychain-db" 2>/dev/null || true
+          rm -rf ~/.appstoreconnect/private_keys

@@ -1,0 +1,75 @@
+# XcodeGen spec. CI runs `xcodegen generate` to create Tinyfolk.xcodeproj (not checked in).
+name: Tinyfolk
+options:
+  bundleIdPrefix: com.heyobi
+  deploymentTarget:
+    iOS: "17.0"
+  createIntermediateGroups: true
+  developmentLanguage: en
+settings:
+  base:
+    MARKETING_VERSION: 1.0.0
+    CURRENT_PROJECT_VERSION: 1
+    SWIFT_VERSION: "5.0"
+    LOCALIZATION_PREFERS_STRING_CATALOGS: YES
+    SWIFT_EMIT_LOC_STRINGS: YES
+targets:
+  Tinyfolk:
+    type: application
+    platform: iOS
+    sources:
+      - Tinyfolk
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.heyobi.tinyfolk
+        PRODUCT_NAME: Tinyfolk
+        TARGETED_DEVICE_FAMILY: "1,2"
+        ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
+        ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME: AccentColor
+        ENABLE_PREVIEWS: YES
+        SWIFT_OPTIMIZATION_LEVEL: "-O"
+    info:
+      path: Tinyfolk/Info.plist
+      properties:
+        CFBundleDisplayName: Tinyfolk
+        CFBundleShortVersionString: $(MARKETING_VERSION)
+        CFBundleVersion: $(CURRENT_PROJECT_VERSION)
+        CFBundleDevelopmentRegion: en
+        CFBundleLocalizations: [en, tr, es, pt-BR, de]
+        LSRequiresIPhoneOS: true
+        LSApplicationCategoryType: public.app-category.entertainment
+        ITSAppUsesNonExemptEncryption: false
+        NSCameraUsageDescription: "Tinyfolk uses the front camera to find where your eyes are, so the little world is drawn from your point of view and looks truly 3D. Frames are analysed on this device and never recorded, stored or sent."
+        UILaunchScreen:
+          UIColorName: LaunchColor
+        UIRequiresFullScreen: true
+        UIStatusBarHidden: true
+        UIViewControllerBasedStatusBarAppearance: true
+        UISupportedInterfaceOrientations: [UIInterfaceOrientationPortrait, UIInterfaceOrientationLandscapeLeft, UIInterfaceOrientationLandscapeRight]
+        UISupportedInterfaceOrientations~ipad: [UIInterfaceOrientationPortrait, UIInterfaceOrientationPortraitUpsideDown, UIInterfaceOrientationLandscapeLeft, UIInterfaceOrientationLandscapeRight]
+        UIApplicationSceneManifest:
+          UIApplicationSupportsMultipleScenes: false
+  TinyfolkTests:
+    type: bundle.unit-test
+    platform: iOS
+    sources:
+      - TinyfolkTests
+    dependencies:
+      - target: Tinyfolk
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.heyobi.tinyfolk.tests
+        GENERATE_INFOPLIST_FILE: YES
+        TEST_HOST: $(BUILT_PRODUCTS_DIR)/Tinyfolk.app/Tinyfolk
+        BUNDLE_LOADER: $(TEST_HOST)
+schemes:
+  Tinyfolk:
+    build:
+      targets:
+        Tinyfolk: all
+        TinyfolkTests: [test]
+    test:
+      targets:
+        - TinyfolkTests
+    archive:
+      config: Release

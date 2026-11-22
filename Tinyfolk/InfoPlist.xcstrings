@@ -1,0 +1,34 @@
+{
+  "sourceLanguage": "en",
+  "strings": {
+    "NSCameraUsageDescription": {
+      "localizations": {
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tinyfolk, küçük dünyayı senin bakış açından çizip gerçekten 3B göstermek için ön kamerayla gözlerinin nerede olduğunu bulur. Görüntüler bu cihazda incelenir; asla kaydedilmez, saklanmaz ya da gönderilmez."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tinyfolk usa la cámara frontal para saber dónde están tus ojos y dibujar el pequeño mundo desde tu punto de vista, en 3D de verdad. Las imágenes se analizan en este dispositivo y nunca se graban, guardan ni envían."
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "O Tinyfolk usa a câmera frontal para saber onde estão os seus olhos e desenhar o pequeno mundo do seu ponto de vista, em 3D de verdade. As imagens são analisadas neste aparelho e nunca são gravadas, guardadas ou enviadas."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tinyfolk nutzt die Frontkamera, um zu erkennen, wo deine Augen sind, und die kleine Welt aus deinem Blickwinkel in echtem 3D zu zeichnen. Bilder werden auf diesem Gerät ausgewertet und nie aufgenommen, gespeichert oder gesendet."
+          }
+        }
+      }
+    }
+  },
+  "version": "1.0"
+}
