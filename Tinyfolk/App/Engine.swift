@@ -180,9 +180,10 @@ final class Engine: ObservableObject {
         } else {
             stageMode = false
         }
-        if let o = presentationOverride { stageMode = o == .stage && g.fold != nil }
+        if let o = presentationOverride { stageMode = o == .stage && g.fold.map { $0.width > $0.height } == true }
 
-        if stageMode, let fold = g.fold {
+        // The stage needs a fold running across the window with real screen on both sides.
+        if stageMode, let fold = g.fold, fold.width > fold.height, fold.minY > 40, H - Float(fold.maxY) > 40 {
             pose = .stage
             let angle = Float(effectiveHinge ?? 110)
             let upperH = Float(fold.minY), lowerH = H - Float(fold.maxY)

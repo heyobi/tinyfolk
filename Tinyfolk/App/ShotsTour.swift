@@ -27,7 +27,8 @@ struct ShotsTour {
         try? await Task.sleep(for: .seconds(3))
 
         if Self.inner {
-            orient(.landscapeRight)
+            // On the inner display the tall window (fold across) is "portrait".
+            orient(.portrait)
             try? await Task.sleep(for: .seconds(2))
             await stage(name: "1-stage@112", character: "pim", stage: "studio", song: "lantern", hinge: 112,
                         a: SIMD3(-0.02, 0.21, 0.36), b: nil, greet: true)
@@ -38,7 +39,7 @@ struct ShotsTour {
             await stage(name: "4-tide@120", character: "cosmo", stage: "tide", song: "tide", hinge: 120,
                         a: SIMD3(0.0, 0.22, 0.34), b: nil, greet: false)
             // Fully open: the floor gives way and the friend lands in the lantern well.
-            orient(.portrait)
+            orient(.landscape)
             engine.hingeOverride = 180
             engine.presentationOverride = .well
             engine.simA = SIMD3(0, -0.1, 0.3)

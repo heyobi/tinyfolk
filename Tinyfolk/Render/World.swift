@@ -254,8 +254,8 @@ final class World {
         rn.position = v(0, 0.012, 0)
         rn.castsShadow = false
         ringNode.addChildNode(rn)
-        let halo = SCNPlane(width: 1.5, height: 1.5)
-        halo.materials = [Mat.additive(Tex.glow(s.ring), intensity: 0.55)]
+        let halo = SCNPlane(width: 1.25, height: 1.25)
+        halo.materials = [Mat.additive(Tex.glow(s.ring), intensity: 0.32)]
         let hn = SCNNode(geometry: halo)
         hn.eulerAngles = v(-.pi / 2, 0, 0)
         hn.position = v(0, 0.01, 0)
@@ -356,8 +356,8 @@ final class World {
             scene.fogEndDistance = 0
             let w = l.screen.x, h = l.screen.y
             let m = min(w, h)
-            let depth = min(max(m * 0.85, 0.05), 0.16)
-            let ch = min(max(m * 0.36, 0.028), 0.085)
+            let depth = min(max(m * 0.75, 0.05), 0.15)
+            let ch = min(max(m * 0.5, 0.032), 0.1)
             buildBox(w: w, h: h, d: depth, well: l.presentation == .well)
             if l.presentation == .well {
                 // Ground at the bottom of the well; up points out of the glass, the backdrop toward the top edge.

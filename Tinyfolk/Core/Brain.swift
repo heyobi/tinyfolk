@@ -58,7 +58,7 @@ struct Brain {
     var style: DanceStyle
     /// Head limits (radians).
     var maxYaw: Float = 1.0
-    var maxPitch: Float = 0.75
+    var maxPitch: Float = 0.85
 
     private(set) var gesture: Act?
     private(set) var facing: Float = 0             // body yaw the character has turned to
@@ -141,6 +141,8 @@ struct Brain {
         let relPitch = max(-maxPitch * 0.6, min(maxPitch, target.pitch))
         p.headYaw = headYaw.step(to: relYaw, dt: dt)
         p.headPitch = -headPitch.step(to: relPitch, dt: dt)    // rig: positive x rotation looks down
+        // Someone looking from far above (into the well): lean back to look up at them.
+        if target.pitch > maxPitch { p.lean -= min(0.55, (target.pitch - maxPitch) * 0.8) }
         p.spin = facing
 
         // Dancing fades in and out with the music.
