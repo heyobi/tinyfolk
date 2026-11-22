@@ -51,6 +51,7 @@ struct RootView: View {
         }
         .ignoresSafeArea()
         .modifier(HingeReader(engine: engine))
+        .modifier(OuterDisplay(engine: engine))
         .statusBarHidden(true)
         .persistentSystemOverlays(.hidden)
         .sheet(item: $sheet) { s in

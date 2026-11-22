@@ -25,6 +25,8 @@ final class Engine: ObservableObject {
     @Published private(set) var diagnostics = ""
     @Published private(set) var hasHinge = false
     @Published var askReview = false
+    /// True while iOS shows our companion on the iPhone Duo outer display.
+    @Published var outerDisplay = false
     /// Sheet the screenshot tour wants open.
     @Published var shotSheet: Sheet?
 
