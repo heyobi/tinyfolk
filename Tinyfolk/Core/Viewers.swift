@@ -27,8 +27,9 @@ struct CameraModel: Equatable {
     /// Position of the point between the eyes relative to the camera: x right, y up, z out of the screen.
     func position(of box: FaceBox) -> SIMD3<Float> {
         let f = focalPixels
-        let wPx = max(box.w * imageSize.x, 1)
-        let z = f * faceWidth / wPx
+        // Box area is steadier than its width alone (Vision's box breathes as the head turns).
+        let sizePx = max((box.w * imageSize.x * box.h * imageSize.y).squareRoot(), 1)
+        let z = f * faceWidth / sizePx
         let cx = (box.x + box.w / 2) * imageSize.x - imageSize.x / 2
         // Eyes sit a little above the middle of the box.
         let cy = (box.y + box.h * 0.58) * imageSize.y - imageSize.y / 2
@@ -80,8 +81,8 @@ struct ViewerTracker {
     }
 
     static let maxViewers = 2
-    static let matchDistance: Float = 0.22
-    static let lostAfter = 0.7
+    static let matchDistance: Float = 0.3
+    static let lostAfter = 1.6
     static let switchLookAway = 1.2
     static let switchNearer = 1.6
     static let attentionDwell = 3.6
@@ -128,7 +129,7 @@ struct ViewerTracker {
             nextID += 1
             tracks.append(Track(id: id, position: d.position, firstSeen: t, lastSeen: t, hits: 1, looking: d.looking,
                                 lookingSince: d.looking ? t : nil, lastLooked: d.looking ? t : 0))
-            var f = OneEuro3(minCutoff: 1.2, beta: 0.9)
+            var f = OneEuro3(minCutoff: 0.7, beta: 0.45)
             _ = f.filter(d.position, t: t)
             filters[id] = f
         }
@@ -154,7 +155,7 @@ struct ViewerTracker {
 
     private mutating func apply(_ d: Detection, to i: Int, t: Double) {
         let id = tracks[i].id
-        var f = filters[id] ?? OneEuro3(minCutoff: 1.2, beta: 0.9)
+        var f = filters[id] ?? OneEuro3(minCutoff: 0.7, beta: 0.45)
         tracks[i].position = f.filter(d.position, t: t)
         filters[id] = f
         tracks[i].lastSeen = t

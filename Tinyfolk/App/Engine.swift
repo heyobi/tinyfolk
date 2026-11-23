@@ -48,6 +48,8 @@ final class Engine: ObservableObject {
     private var viewers = ViewerTracker()
     private var blender = EyeBlender(SIMD3(0, 0.2, 0.36))
     private var fallbackEye = Spring3(SIMD3(0, 0.2, 0.36), omega: 3)
+    /// Last smoothing on the rendering eye: removes the remaining frame-to-frame tremble with ~60 ms of lag.
+    private var eyeSmooth = Spring3(SIMD3(0, 0.2, 0.36), omega: 16)
     private var latestFrame: FaceTracker.Frame?
     private var frameConsumed = true
     private var hingeAngle: Double?
@@ -300,7 +302,8 @@ final class Engine: ObservableObject {
         }
         let renderEye = blender.update(target: target, id: viewers.primary?.confirmed == true ? viewers.primaryID : nil, t: t)
         let attention = viewers.attention.flatMap { $0.confirmed ? $0.position : nil }
-        world.update(t: t, dt: dt, eye: renderEye, attention: attention, beat: musicOn ? Synth.shared.beat : nil)
+        let smoothEye = eyeSmooth.step(to: renderEye, dt: dt)
+        world.update(t: t, dt: dt, eye: smoothEye, attention: attention, beat: musicOn ? Synth.shared.beat : nil)
     }
 
     private func neutralEye(_ p: Presentation) -> SIMD3<Float> {

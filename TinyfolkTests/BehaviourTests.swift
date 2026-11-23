@@ -63,9 +63,35 @@ final class ViewerTests: XCTestCase {
     func testViewerLeavesAfterTimeout() {
         var v = ViewerTracker()
         _ = feed(&v, [Detection(position: a, looking: true)], from: 0, seconds: 1)
-        let ev = feed(&v, [], from: 1, seconds: 1)
+        let ev = feed(&v, [], from: 1, seconds: 2)
         XCTAssert(ev.contains(.left(id: 1)))
         XCTAssertNil(v.primary)
+    }
+
+    /// A face that drops out for a moment (looked away, blinked into shadow) keeps its track and position.
+    func testShortDropoutKeepsTheViewer() {
+        var v = ViewerTracker()
+        _ = feed(&v, [Detection(position: a, looking: true)], from: 0, seconds: 1)
+        let ev = feed(&v, [], from: 1, seconds: 1.0)
+        XCTAssertFalse(ev.contains(.left(id: 1)))
+        XCTAssertEqual(v.primaryID, 1)
+        XCTAssertLessThan(simd_distance(v.primary!.position, a), 0.01)
+    }
+
+    /// Noisy detections around a still head barely move the filtered eye.
+    func testStillHeadIsSteady() {
+        var v = ViewerTracker()
+        var xs: [Float] = []
+        var t = 0.0
+        var seed: UInt64 = 1
+        while t < 4 {
+            seed = seed &* 6364136223846793005 &+ 1
+            let n = Float(Int(seed >> 40) % 1000) / 1000 - 0.5
+            v.update([Detection(position: a + SIMD3(n * 0.01, 0, n * 0.02), looking: true)], t: t)
+            if t > 2, let p = v.primary { xs.append(p.position.x) }
+            t += 1 / 30
+        }
+        XCTAssertLessThan(xs.max()! - xs.min()!, 0.005)
     }
 
     func testFlickerIsNotAViewer() {

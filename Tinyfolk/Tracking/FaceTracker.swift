@@ -151,25 +151,30 @@ final class FaceTracker: NSObject, AVCaptureVideoDataOutputSampleBufferDelegate 
         var faces: [FaceBox] = []
         for o in observations.prefix(4) {
             let roll = o.roll?.floatValue ?? 0
-            guard abs(roll) < 0.7, o.confidence > 0.5 else { continue }
+            guard abs(roll) < 0.9, o.confidence > 0.3 else { continue }
             let b = o.boundingBox
             faces.append(FaceBox(x: Float(b.origin.x), y: Float(b.origin.y), w: Float(b.width), h: Float(b.height), yaw: o.yaw?.floatValue))
         }
 
         if !faces.isEmpty {
             lastUpright = now
-            if !locked {
+            if !locked || (UserDefaults.standard.object(forKey: orientationKey) as? UInt32) != orientation.rawValue {
                 locked = true
                 UserDefaults.standard.set(orientation.rawValue, forKey: orientationKey)
             }
         } else {
             // Nobody upright for a while: try the next orientation (slower once one has worked here).
-            let wait = locked ? 4.0 : 1.2
+            // An orientation that has found faces here is kept: the person probably just looked away. Others are only
+            // tried after a long gap, and the search always comes back to the known one.
+            let wait = locked ? 10.0 : 1.2
             if now - lastUpright > wait && now - lastSwitch > 0.9 {
                 let i = Self.candidates.firstIndex(of: orientation) ?? 0
                 orientation = Self.candidates[(i + 1) % Self.candidates.count]
                 lastSwitch = now
-                if locked { locked = false; UserDefaults.standard.removeObject(forKey: orientationKey) }
+                if locked, let raw = UserDefaults.standard.object(forKey: orientationKey) as? UInt32,
+                   orientation.rawValue == raw {
+                    lastUpright = now   // full circle: stay on the known orientation for another while
+                }
             }
         }
         let diagnostics = "faces \(faces.count)/\(observations.count) · orientation \(orientation.rawValue)\(locked ? " locked" : "") · fov \(Int(fov))°"
