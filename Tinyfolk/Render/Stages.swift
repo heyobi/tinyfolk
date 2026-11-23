@@ -43,9 +43,9 @@ enum Stages {
 
     static let garden = StageSpec(
         id: "garden", name: String(localized: "Paper Garden"), free: true, background: UIColor(hex: 0xF4E3CB),
-        floor: { Tex.paper(UIColor(hex: 0xF7ECDC), fibre: UIColor(hex: 0xD9C3A5)) }, wall: { Tex.gardenWall() },
+        floor: { Tex.paper(UIColor(hex: 0xE9D9C2), fibre: UIColor(hex: 0xC9AE8A)) }, wall: { Tex.gardenWall() },
         ring: UIColor(hex: 0xFFB74D), mote: UIColor(hex: 0xFF9EB5), motes: .fall,
-        key: UIColor(hex: 0xFFF1DE), keyIntensity: 1300, ambient: UIColor(hex: 0xFFE2C2), ambientIntensity: 600) { g in
+        key: UIColor(hex: 0xFFF1DE), keyIntensity: 750, ambient: UIColor(hex: 0xFFE2C2), ambientIntensity: 260) { g in
         let petals: [UInt32] = [0xFF8FA3, 0xFFC857, 0xA0C4FF, 0xFFADAD, 0xC3A6FF]
         let spots: [(Float, Float, Float)] = [(-0.9, -0.4, 0.55), (-0.62, -0.75, 0.42), (0.8, -0.55, 0.6), (1.05, -0.2, 0.38), (0.5, -0.9, 0.48), (-1.15, 0.1, 0.35)]
         for (i, s) in spots.enumerated() {
@@ -119,8 +119,8 @@ enum Stages {
     static let winter = StageSpec(
         id: "winter", name: String(localized: "First Snow"), free: false, background: UIColor(hex: 0xD6E3F0),
         floor: { Tex.snow() }, floorTile: 0.04, wall: { Tex.winterWall() }, ring: UIColor(hex: 0x9FD1FF),
-        mote: UIColor.white, motes: .fall, key: UIColor(hex: 0xF4F8FF), keyIntensity: 1200,
-        ambient: UIColor(hex: 0xBFD3EA), ambientIntensity: 650) { g in
+        mote: UIColor.white, motes: .fall, key: UIColor(hex: 0xF4F8FF), keyIntensity: 750,
+        ambient: UIColor(hex: 0xBFD3EA), ambientIntensity: 280) { g in
         let pine = Mat.clay(UIColor(hex: 0x2F6B4F), rough: 0.85)
         let snowM = Mat.clay(.white, rough: 0.95)
         let trees: [(Float, Float, Float)] = [(-1.0, -0.6, 1.0), (-1.3, -0.2, 0.7), (1.1, -0.65, 1.15), (0.85, -0.95, 0.75)]
