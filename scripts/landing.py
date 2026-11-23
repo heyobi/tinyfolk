@@ -91,7 +91,7 @@ def page(app):
 
 
 import os
-APP_ID = os.environ.get('APP_ID', '0000000000')
+APP_ID = os.environ.get('APP_ID', '6838158988')
 
 tinyfolk_app = dict(
     id=APP_ID, name='Tinyfolk', category='EntertainmentApplication',
