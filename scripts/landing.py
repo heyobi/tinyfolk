@@ -104,6 +104,7 @@ tinyfolk_app = dict(
     keywords='hologram app iPhone, iPhone Duo hologram, 3D hologram app, head tracking 3D, pocket hologram, off-axis projection iPhone, parallax 3D app, iPhone Duo apps, desk toy app, 3D character app',
     shots=[('screens/duo-1-stage.jpg', 'iPhone Duo half open: a small robot stands on the fold in 3D'),
            ('screens/duo-2-two.jpg', 'The character turns to wave at a second person'),
+           ('screens/duo-3-dance.jpg', 'Odette dances on the Night Rooftop'),
            ('screens/duo-5-well.jpg', 'Opened flat: a lantern well beneath the glass'),
            ('screens/iphone-1-box.jpg', 'Tinyfolk on iPhone: a window into a little box'),
            ('screens/ipad-1-box.jpg', 'Tinyfolk on iPad')],

@@ -5,6 +5,17 @@
 A tiny 3D friend that lives in your iPhone. Tinyfolk follows your eyes with the front camera and draws a small
 world from exactly your point of view, so the character looks like it is standing right there, in front of you.
 
+<p align="center">
+  <img src="docs/screens/duo-1-stage.jpg" width="49%" alt="iPhone Duo half open: a small robot stands on the fold in 3D">
+  <img src="docs/screens/duo-2-two.jpg" width="49%" alt="The fox turns to wave at a second person">
+</p>
+<p align="center">
+  <img src="docs/screens/iphone-1-box.jpg" width="24%" alt="Tinyfolk on iPhone">
+  <img src="docs/screens/iphone-3-well.jpg" width="24%" alt="The lantern well">
+  <img src="docs/screens/iphone-4-snow.jpg" width="24%" alt="First Snow stage">
+  <img src="docs/screens/iphone-5-friends.jpg" width="24%" alt="Eight original friends">
+</p>
+
 - **iPhone Duo, half open:** stand it like a tiny laptop. The upper half becomes the back wall, the lower half the
   floor, and the character stands on the fold. Both halves are drawn with their own off-axis projection from your
   eye, using the live hinge angle, so the floor and backdrop look flat and continuous at any angle.
